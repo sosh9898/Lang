@@ -1,12 +1,11 @@
 const express = require('express');
 const router = express.Router();
 
-const secret = require('../config/secret');
+const secret = require('../../config/secret');
 const jwt = require('jsonwebtoken');
 const async = require('async');
-const await = require('await');
 
-const pool = require('../config/dbPool');
+const pool = require('../../config/dbPool');
 const multer = require('multer');
 const multerS3 = require('multer-s3');
 const aws = require('aws-sdk');
@@ -45,7 +44,7 @@ router.get('/:filter',(req,res)=>{
         function(connection, callback) {
             let loungePostLists=[];
             if(req.params.filter =='following'){
-                 console.log('bb')
+                console.log('bb')
 
                 connection.query('select lounge_id,user.name,user.image,lounge.date,lounge.content,native_language,hope_language,like_count, comment_count from user,lounge where  user.user_token = lounge.user_token and user.native_language in (select hope_language from user where user_token=?) and user.hope_language in (select native_language from user where user_token=?) and lounge_id in (select lounge_id from user, lounge,user_following where lounge.user_token=user_following.follwing_token and user_following.user_token=?)', [userToken,userToken,userToken], (err, rows) => {
                     if (err) {
@@ -73,12 +72,31 @@ router.get('/:filter',(req,res)=>{
                     }
                 });
             }
-                   },
+        },
+        
+        function(connection,rows, callback){
+            console.log('aaa')
+            connection.query('select lounge_id from lounge_like where lounge_like.user_token =?', userToken,(err, isLikeRows) =>{
+                if(err){
+                    res.status(500).send({
+                        message: "query error"
+                    });
+                    connection.release();
+                    callback(err);
+                }else{
+                    console.log(isLikeRows);
+                    let isLikeArray = [];
+                    for(let i=0; i<isLikeRows.length;i++){
+                        isLikeArray.push(isLikeRows[i].lounge_id);
+                    }
+                    callback(null, connection,rows, isLikeArray);
+                }
+            })
+        },
 
-        function(connection, rows, callback) {
+        function(connection, rows, isLikeArray, callback) {
             let loungePostLists=[];
-            //쿼리문만 변경.
-
+             console.log('bbb')
             function closureSelectLoop(row){
                 return function(callback){
                     connection.query('select lounge_image from lounge_image where lounge_id=?',row.lounge_id, (err, imageRows) =>{
@@ -89,20 +107,22 @@ router.get('/:filter',(req,res)=>{
                             connection.release();
                             callback(err);
                         }else{
-                            let tempArray=[];
+                            let imageArray=[];
                             for(let j=0;j<imageRows.length;j++){
-                                tempArray.push(imageRows[j].lounge_image);
+                                imageArray.push(imageRows[j].lounge_image);
                             }
+
                             loungePostLists.push({
                                 image: row.image,
                                 name: row.name,
                                 date: row.date,
-                                lounge_image : tempArray,
+                                lounge_image : imageArray,
                                 content: row.content,
                                 native_language: row.native_language,
                                 hope_language : row.hope_language,
                                 like_count : row.like_count,
-                                comment_count : row.comment_count
+                                comment_count : row.comment_count,
+                                isLike : isLikeArray.indexOf(row.lounge_id)!=-1? true : false
                             });
                             callback(null);
                         }
@@ -150,8 +170,8 @@ router.get('/:filter',(req,res)=>{
         if (err) console.log(err);
         else console.log(result);
     });
-
-
 })
+
+
 
 module.exports = router;
