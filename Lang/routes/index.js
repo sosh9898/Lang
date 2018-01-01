@@ -1,9 +1,22 @@
-var express = require('express');
-var router = express.Router();
+const express = require('express');
+const router = express.Router();
 
-/* GET home page. */
-router.get('/', function(req, res, next) {
-  res.render('index', { title: 'Express' });
-});
+const user = require('./user');
+router.use('/user', user);
+
+const meeting = require('./meeting');
+router.use('/meeting', meeting);
+
+const lounge = require('./lounge');
+router.use('/lounge', lounge);
+
+const chatting = require('./chatting');
+router.use('/chatting', chatting);
+
+const mypage = require('./mypage');
+router.use('/mypage', mypage);
+
+const notification = require('./notification');
+router.use('/notification', notification);
 
 module.exports = router;
