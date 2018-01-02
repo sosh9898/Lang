@@ -4,17 +4,12 @@ const router = express.Router();
 const secret = require('../../config/secret');
 const jwt = require('jsonwebtoken');
 const async = require('async');
-
 const pool = require('../../config/dbPool');
-const multer = require('multer');
-const multerS3 = require('multer-s3');
-const aws = require('aws-sdk');
-aws.config.loadFromPath('./config/aws_config.json');
 
 
 router.put('/:lounge_id',(req,res)=>{
     let jwtToken = req.headers.jwttoken
-    let userToken ="ccc"
+    let userId ="5"
 
     // jwt.verify(jwtToken, secret, (err, data) => {
  //     if (err){
@@ -25,9 +20,9 @@ router.put('/:lounge_id',(req,res)=>{
  //         else if(err.message === 'invalid token') console.log('invalid token');
  //          }
  //         else {
-    //      userToken = data.key1;
+    //      userId = data.key1;
     // }
-    // console.log(userToken);
+    // console.log(userId);
 
     let taskArray = [
         function(callback) {
@@ -42,7 +37,7 @@ router.put('/:lounge_id',(req,res)=>{
         },
 
         function(connection, callback) {
-            connection.query('select * from lounge_like where lounge_id = ? and user_token = ?',[req.params.lounge_id,userToken],(err, rows)=>{
+            connection.query('select * from lounge_like where lounge_id = ? and user_id = ?',[req.params.lounge_id,userId],(err, rows)=>{
                 if(err){
                     res.status(500).send({
                         message: "query error"
@@ -56,7 +51,7 @@ router.put('/:lounge_id',(req,res)=>{
         function(connection, rows, callback) {
             let variationValue ;
             if(rows.length == 0){
-                connection.query('insert into lounge_like(lounge_id,user_token) value(?,?)',[req.params.lounge_id,userToken],(err, rows)=>{
+                connection.query('insert into lounge_like(lounge_id,user_id) value(?,?)',[req.params.lounge_id,userId],(err, rows)=>{
                     if(err){
                         res.status(500).send({
                             message: "query error"
@@ -70,7 +65,7 @@ router.put('/:lounge_id',(req,res)=>{
                     }
                 }) 
             }else{
-                connection.query('delete from lounge_like where lounge_id =? and user_token=?',[req.params.lounge_id,userToken],(err, rows)=>{
+                connection.query('delete from lounge_like where lounge_id =? and user_id=?',[req.params.lounge_id,userId],(err, rows)=>{
                     if(err){
                         res.status(500).send({
                             message: "query error"

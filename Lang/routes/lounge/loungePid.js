@@ -14,7 +14,7 @@ aws.config.loadFromPath('./config/aws_config.json');
 
 router.get('/:filter',(req,res)=>{
 	let jwtToken = req.headers.jwttoken
-	let userToken ="ccc"
+	let userId ="5"
 
 	// jwt.verify(jwtToken, secret, (err, data) => {
  //    	if (err){
@@ -25,9 +25,9 @@ router.get('/:filter',(req,res)=>{
  //  		else if(err.message === 'invalid token') console.log('invalid token');
  // 		 }
  //  		else {
-	// 	    userToken = data.key1;
+	// 	    userId = data.key1;
 	// }
-	// console.log(userToken);
+	// console.log(userId);
 
 	let taskArray = [
         function(callback) {
@@ -42,14 +42,14 @@ router.get('/:filter',(req,res)=>{
         },
 
         function(connection, callback) {
-            let loungePostLists=[];
             let query ;
             if(req.params.filter =='following'){
-                query = 'select lounge_id,user.name,user.image,lounge.date,lounge.content,native_language,hope_language,like_count, comment_count from user,lounge where  user.user_token = lounge.user_token and user.native_language in (select hope_language from user where user_token=?) and user.hope_language in (select native_language from user where user_token=?) and lounge_id in (select lounge_id from user, lounge,user_following where lounge.user_token=user_following.follwing_token and user_following.user_token=?)'
+                query = 'select lounge_id,user_name,user_image,lounge_time,lounge_content,native_lang,hope_lang,like_count, comment_count from user,lounge where  user.user_id = lounge.user_id and user.native_lang in (select hope_lang from user where user_id=?) and user.hope_lang in (select native_lang from user where user_id=?) and lounge_id in (select lounge_id from user, lounge, user_following where lounge.user_id=user_following.following_id and user_following.user_id=?)'
             }else{
-                query = 'select lounge_id,user.name,user.image,lounge.date,lounge.content,native_language,hope_language,like_count, comment_count from user,lounge where  user.user_token = lounge.user_token and user.native_language in (select hope_language from user where user_token=?) and user.hope_language in (select native_language from user where user_token=?) and(lounge_id  in (select lounge_id from user,lounge where  is_public=0 or  lounge_id in (select lounge_id from user,lounge where is_public=1 and lounge_id in (select lounge_id from user, lounge,user_following where lounge.user_token=user_following.follwing_token and user_following.user_token=?))))'
+
+                query = 'select lounge_id,user_name,user_image,lounge_time,lounge_content,native_lang,hope_lang,like_count, comment_count from user,lounge where  user.user_id = lounge.user_id and user.native_lang in (select hope_lang from user where user_id=?) and user.hope_lang in (select native_lang from user where user_id=?) and(lounge_id  in (select lounge_id from user,lounge where  is_public=0 or  lounge_id in (select lounge_id from user,lounge where is_public=1 and lounge_id in (select lounge_id from user, lounge,user_following where lounge.user_id=user_following.following_id and user_following.user_id=?))))'
             }
-            connection.query(query, [userToken, userToken, userToken], (err, rows) => {
+            connection.query(query, [userId, userId, userId], (err, rows) => {
                 if (err) {
                     res.status(500).send({
                         message: "query error"
@@ -63,7 +63,7 @@ router.get('/:filter',(req,res)=>{
         },
 
         function(connection,rows, callback){
-            connection.query('select lounge_id from lounge_like where lounge_like.user_token =?', userToken,(err, isLikeRows) =>{
+            connection.query('select lounge_id from lounge_like where lounge_like.user_id =?', userId,(err, isLikeRows) =>{
                 if(err){
                     res.status(500).send({
                         message: "query error"
@@ -82,6 +82,7 @@ router.get('/:filter',(req,res)=>{
 
         function(connection, rows, isLikeArray, callback) {
             let loungePostLists=[];
+            
             function closureSelectLoop(row){
                 return function(callback){
                     connection.query('select lounge_image from lounge_image where lounge_id=?',row.lounge_id, (err, imageRows) =>{
@@ -96,15 +97,14 @@ router.get('/:filter',(req,res)=>{
                             for(let j=0;j<imageRows.length;j++){
                                 imageArray.push(imageRows[j].lounge_image);
                             }
-
                             loungePostLists.push({
-                                image: row.image,
-                                name: row.name,
-                                date: row.date,
+                                user_image: row.user_image,
+                                user_name: row.user_name,
+                                lounge_time: row.lounge_time,
                                 lounge_image : imageArray,
-                                content: row.content,
-                                native_language: row.native_language,
-                                hope_language : row.hope_language,
+                                lounge_content: row.lounge_content,
+                                native_lang: row.native_lang,
+                                hope_lang : row.hope_lang,
                                 like_count : row.like_count,
                                 comment_count : row.comment_count,
                                 isLike : isLikeArray.indexOf(row.lounge_id)!=-1? true : false
