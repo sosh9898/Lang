@@ -34,7 +34,7 @@ router.get('/:filter',(req,res)=>{
             pool.getConnection((err, connection) => {
                 if (err) {
                     res.status(500).send({
-                        message: "find user data error"
+                        message: "connection error"
                     });
                     callback(err);
                 } else callback(null, connection);
@@ -43,39 +43,26 @@ router.get('/:filter',(req,res)=>{
 
         function(connection, callback) {
             let loungePostLists=[];
+            let query ;
             if(req.params.filter =='following'){
-                console.log('bb')
-
-                connection.query('select lounge_id,user.name,user.image,lounge.date,lounge.content,native_language,hope_language,like_count, comment_count from user,lounge where  user.user_token = lounge.user_token and user.native_language in (select hope_language from user where user_token=?) and user.hope_language in (select native_language from user where user_token=?) and lounge_id in (select lounge_id from user, lounge,user_following where lounge.user_token=user_following.follwing_token and user_following.user_token=?)', [userToken,userToken,userToken], (err, rows) => {
-                    if (err) {
-                        res.status(500).send({
-                            message: "query error"
-                        });
-                        connection.release();
-                        callback(err);
-                    } else {
-                        callback(null, connection, rows);
-                    }
-                });
+                query = 'select lounge_id,user.name,user.image,lounge.date,lounge.content,native_language,hope_language,like_count, comment_count from user,lounge where  user.user_token = lounge.user_token and user.native_language in (select hope_language from user where user_token=?) and user.hope_language in (select native_language from user where user_token=?) and lounge_id in (select lounge_id from user, lounge,user_following where lounge.user_token=user_following.follwing_token and user_following.user_token=?)'
             }else{
-                 console.log('aa')
-
-                connection.query('select lounge_id,user.name,user.image,lounge.date,lounge.content,native_language,hope_language,like_count, comment_count from user,lounge where  user.user_token = lounge.user_token and user.native_language in (select hope_language from user where user_token=?) and user.hope_language in (select native_language from user where user_token=?) and(lounge_id  in (select lounge_id from user,lounge where  is_public=0 or  lounge_id in (select lounge_id from user,lounge where is_public=1 and lounge_id in (select lounge_id from user, lounge,user_following where lounge.user_token=user_following.follwing_token and user_following.user_token=?))))', [userToken, userToken, userToken], (err, rows) => {
-                    if (err) {
-                        res.status(500).send({
-                            message: "query error"
-                        });
-                        connection.release();
-                        callback(err);
-                    } else {
-                        callback(null, connection, rows);
-                    }
-                });
+                query = 'select lounge_id,user.name,user.image,lounge.date,lounge.content,native_language,hope_language,like_count, comment_count from user,lounge where  user.user_token = lounge.user_token and user.native_language in (select hope_language from user where user_token=?) and user.hope_language in (select native_language from user where user_token=?) and(lounge_id  in (select lounge_id from user,lounge where  is_public=0 or  lounge_id in (select lounge_id from user,lounge where is_public=1 and lounge_id in (select lounge_id from user, lounge,user_following where lounge.user_token=user_following.follwing_token and user_following.user_token=?))))'
             }
+            connection.query(query, [userToken, userToken, userToken], (err, rows) => {
+                if (err) {
+                    res.status(500).send({
+                        message: "query error"
+                    });
+                    connection.release();
+                    callback(err);
+                } else {
+                    callback(null, connection, rows);
+                }
+            });
         },
-        
+
         function(connection,rows, callback){
-            console.log('aaa')
             connection.query('select lounge_id from lounge_like where lounge_like.user_token =?', userToken,(err, isLikeRows) =>{
                 if(err){
                     res.status(500).send({
@@ -84,7 +71,6 @@ router.get('/:filter',(req,res)=>{
                     connection.release();
                     callback(err);
                 }else{
-                    console.log(isLikeRows);
                     let isLikeArray = [];
                     for(let i=0; i<isLikeRows.length;i++){
                         isLikeArray.push(isLikeRows[i].lounge_id);
@@ -96,7 +82,6 @@ router.get('/:filter',(req,res)=>{
 
         function(connection, rows, isLikeArray, callback) {
             let loungePostLists=[];
-             console.log('bbb')
             function closureSelectLoop(row){
                 return function(callback){
                     connection.query('select lounge_image from lounge_image where lounge_id=?',row.lounge_id, (err, imageRows) =>{
