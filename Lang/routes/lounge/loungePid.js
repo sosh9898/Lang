@@ -4,12 +4,7 @@ const router = express.Router();
 const secret = require('../../config/secret');
 const jwt = require('jsonwebtoken');
 const async = require('async');
-
 const pool = require('../../config/dbPool');
-const multer = require('multer');
-const multerS3 = require('multer-s3');
-const aws = require('aws-sdk');
-aws.config.loadFromPath('./config/aws_config.json');
 
 
 router.get('/:filter',(req,res)=>{

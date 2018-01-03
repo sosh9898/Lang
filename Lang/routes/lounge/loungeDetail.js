@@ -78,7 +78,6 @@ router.get('/:lounge_id',(req,res)=>{
                     connection.release();
                     callback(err);
                 }else{
-                    console.log("a")
                     let commentArray = []
                     for(let i=0;i<commentRows.length;i++){
                         commentArray.push({
@@ -90,7 +89,6 @@ router.get('/:lounge_id',(req,res)=>{
                     }
 
                     if(rows.length!=0){
-                        console.log("b")
                         loungePostDetail = {
                             user_image: rows[0].user_image,
                             user_name: rows[0].user_name,

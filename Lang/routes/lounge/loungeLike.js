@@ -9,7 +9,7 @@ const pool = require('../../config/dbPool');
 
 router.put('/:lounge_id',(req,res)=>{
     let jwtToken = req.headers.jwttoken
-    let userId ="5"
+    let userId ="4"
 
     // jwt.verify(jwtToken, secret, (err, data) => {
  //     if (err){
@@ -59,7 +59,6 @@ router.put('/:lounge_id',(req,res)=>{
                         connection.release();
                         callback(err);
                     }else {
-                        console.log('aa');
                         variationValue = 1;
                         callback(null, connection, variationValue);
                     }
@@ -74,7 +73,6 @@ router.put('/:lounge_id',(req,res)=>{
                         callback(err);
 
                     }else{
-                        console.log('bb');
                         variationValue = -1;
                         callback(null, connection, variationValue);
                     }
@@ -92,7 +90,6 @@ router.put('/:lounge_id',(req,res)=>{
                     connection.release();
                     callback(err);
                 }else {
-                    console.log('cc');
                     connection.release();
                     callback(null,updateResult);
                 }
