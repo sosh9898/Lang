@@ -7,13 +7,9 @@ const user = require('./user');
 // const meeting = require('./meeting');
 // router.use('/meeting', meeting);
 
-<<<<<<< HEAD
+
 const lounge = require('./lounge/index');
 router.use('/lounge', lounge);
-=======
-// const lounge = require('./lounge');
-// router.use('/lounge', lounge);
->>>>>>> cb675f674e9ac72908dee69cb1e723476b0400b2
 
 // const user = require('./user');
 // router.use('/user', user);
@@ -33,17 +29,12 @@ router.use('/lounge', lounge);
 // const notification = require('./notification');
 // router.use('/notification', notification);
 
-<<<<<<< HEAD
 // const notification = require('./notification');
 // router.use('/notification', notification);
 
-module.exports = router;
-=======
-const management = require('./management');
-router.use('/management', management);
+// const management = require('./management');
+// router.use('/management', management);
 
-const reviews = require('./reviews');
-router.use('/reviews', reviews);
+// const reviews = require('./reviews');
+// router.use('/reviews', reviews);
 
-module.exports = router;
->>>>>>> cb675f674e9ac72908dee69cb1e723476b0400b2
