@@ -7,6 +7,7 @@ const user = require('./user');
 // const meeting = require('./meeting');
 // router.use('/meeting', meeting);
 
+
 const lounge = require('./lounge/index');
 router.use('/lounge', lounge);
 
@@ -22,8 +23,8 @@ router.use('/lounge', lounge);
 // const chatting = require('./chatting');
 // router.use('/chatting', chatting);
 
-const mypage = require('./mypage');
-router.use('/mypage', mypage);
+// const mypage = require('./mypage');
+// router.use('/mypage', mypage);
 
 // const notification = require('./notification');
 // router.use('/notification', notification);
@@ -31,4 +32,9 @@ router.use('/mypage', mypage);
 // const notification = require('./notification');
 // router.use('/notification', notification);
 
-module.exports = router;
+// const management = require('./management');
+// router.use('/management', management);
+
+// const reviews = require('./reviews');
+// router.use('/reviews', reviews);
+

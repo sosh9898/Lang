@@ -7,10 +7,12 @@ var bodyParser = require('body-parser');
 
 var index = require('./routes/index');
 var users = require('./routes/users');
+const secret = require('./config/jwt_secret')
 
 var app = express();
 
 // view engine setup
+app.set('secret', secret.secret);
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
 
