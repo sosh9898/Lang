@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 
-const secret = require('../../config/secret');
+const secret = require('../../config/jwt_secret');
 const jwt = require('jsonwebtoken');
 const async = require('async');
 const pool = require('../../config/dbPool');
