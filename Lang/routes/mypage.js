@@ -1,6 +1,5 @@
 
-
- const express = require('express');
+const express = require('express');
 const router = express.Router();
 const pool = require('../config/dbpool');
 const async = require('async');
