@@ -1,6 +1,7 @@
 
 const express = require('express');
 const router = express.Router();
+const secret = require('../config/jwt_secret');
 const pool = require('../config/dbpool');
 const async = require('async');
 // const jwt = require('jsonwebtoken');
@@ -18,9 +19,24 @@ const async = require('async');
 // 	}
 // 	console.log(userToken);
 
+//multer????
+/*
+aws.config.loadFromPath('./config/aws_config.json');
 
+var s3 = new aws.S3();
 
-
+var upload = multer({
+  storage: multerS3({
+    s3: s3,
+    bucket: 'targetsopt21th',
+    acl: 'public-read',
+    key: function (req, file, cb)
+    {
+      cb(null, Date.now() + '.' + file.originalname.split('.').pop());
+    }
+  })
+});
+*/
 
 //테스트용
 router.get('/', function(req, res, next) {
@@ -134,7 +150,7 @@ router.get('/:userToken', function(req, res){
 
           result.followingNum = result2[0].followingNum;
           // mypageResult.myFollowingNum.push(result2[0]);
-         callback( null , connection, result[0] ) ;
+         callback( null , connection, result ) ;
         //  console.log(result);
         }
       });
@@ -196,7 +212,7 @@ router.get('/:userToken', function(req, res){
           });
 
           connection.release() ;
-          callback( null , connection, result[0] ) ;
+          callback( null , connection, result ) ;
         }
       });
     }
