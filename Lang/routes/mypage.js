@@ -1,7 +1,12 @@
 
 const express = require('express');
 const router = express.Router();
+<<<<<<< HEAD
 const pool = require('../config/dbPool');
+=======
+const secret = require('../config/jwt_secret');
+const pool = require('../config/dbpool');
+>>>>>>> 32195972fb75020c072c54f21e44298fcd715e0e
 const async = require('async');
 // const jwt = require('jsonwebtoken');
 
@@ -18,9 +23,24 @@ const async = require('async');
 // 	}
 // 	console.log(userToken);
 
+//multer????
+/*
+aws.config.loadFromPath('./config/aws_config.json');
 
+var s3 = new aws.S3();
 
-
+var upload = multer({
+  storage: multerS3({
+    s3: s3,
+    bucket: 'targetsopt21th',
+    acl: 'public-read',
+    key: function (req, file, cb)
+    {
+      cb(null, Date.now() + '.' + file.originalname.split('.').pop());
+    }
+  })
+});
+*/
 
 //테스트용
 router.get('/', function(req, res, next) {
@@ -134,7 +154,7 @@ router.get('/:userToken', function(req, res){
 
           result.followingNum = result2[0].followingNum;
           // mypageResult.myFollowingNum.push(result2[0]);
-         callback( null , connection, result[0] ) ;
+         callback( null , connection, result ) ;
         //  console.log(result);
         }
       });
@@ -196,7 +216,7 @@ router.get('/:userToken', function(req, res){
           });
 
           connection.release() ;
-          callback( null , connection, result[0] ) ;
+          callback( null , connection, result ) ;
         }
       });
     }
@@ -895,6 +915,311 @@ router.get('/lounge/:userToken/:otherUserToken', function(req, res) {
 });
 
 
+// 26. 남의 페이지 - 팔로우 신청하기
+router.put('/:userToken/:otherUserToken/follow', function(req, res){
+
+  let userToken = req.params.userToken;
+  let otherUserToken = req.params.otherUserToken;
+
+  let task = [
+
+    //연결
+    function(callback) {
+
+      pool.getConnection(function(err, connection){
+        if(err) {
+          res.status(500).send( {
+                  status : "fail" ,
+                  message : "internal server err1"
+               });
+               callback("getConnection err");
+        } else{
+          callback(null, connection);
+        }
+      });
+    },
+
+    //팔로우 했는지 체크
+    function(connection, callback){
+
+      let followCheckQuery = 'SELECT * FROM user_following u_f WHERE user_id = ? AND following_id = ?';
+      //let array = [null, userToken, otherUserToken];
+
+      connection.query(followCheckQuery, [userToken, otherUserToken], function(err, result) {
+        if(err){
+          res.status(500).send({
+            status : "fail",
+            message : "internal server err"
+          });
+          connection.release();
+          callback("Query err");
+        }
+        else{
+
+          //팔로우테이블에 없으면
+          if(result.length === 0){ //팔로우 신청
+
+            async.waterfall([
+
+              //followTask
+              function(callback) {
+
+                pool.getConnection(function(err, connection){
+                  if(err) {
+                    res.status(500).send( {
+          						status : "fail" ,
+          						message : "internal server err1"
+          					});
+          					callback("getConnection err");
+                  } else{
+                    callback(null, connection);
+                  }
+                });
+              },
+
+              //user_follower 테이블에 입력
+              function(connection, callback){
+
+                let followerInsertQuery = 'INSERT INTO user_follower VALUES(?,?,?)';
+                let array = [ null, otherUserToken, userToken ];
+
+
+                connection.query(followerInsertQuery, array, function(err, result){
+                  if(err){
+                    res.status(500).send( {
+                            status : "fail" ,
+                            message : "internal server err2 : followerInsertQuery err"
+                         });
+                         connection.release() ;
+                         callback( "Query err" ) ;
+                  }else{
+
+                    callback(null, connection, result);
+                  }
+                });
+              },
+
+              //user_following 테이블에 입력
+              function(connection, result, callback){
+
+                let followingInsertQuery = 'INSERT INTO user_following VALUES(?,?,?)';
+                let array = [ null, userToken, otherUserToken ];
+
+
+                connection.query(followingInsertQuery, array, function(err, result2){
+                  if(err){
+                    res.status(500).send( {
+                            status : "fail" ,
+                            message : "internal server err2 : followingInsertQuery err"
+                         });
+                         connection.release() ;
+                         callback( "Query err" ) ;
+                  }else{
+
+                    //result[0].push(result2[0]);
+                    callback(null, connection, result);
+                  }
+                });
+              },
+
+
+              //user 테이블에 팔로잉 수 +1
+              function(connection, result, callback){
+
+                let followingNumUpdateQuery = 'UPDATE user u SET u.following_count = u.following_count + 1 WHERE user_id = ?';
+
+
+                connection.query(followingNumUpdateQuery, userToken, function(err, result){
+                  if(err){
+                    res.status(500).send( {
+                            status : "fail" ,
+                            message : "internal server err2 : followingNumUpdateQuery err"
+                         });
+                         connection.release() ;
+                         callback( "Query err" ) ;
+                  }else{
+
+                    callback(null, connection, result);
+                  }
+                });
+              },
+
+              //user 테이블에 팔로워 수 +1
+              function(connection, result, callback){
+
+                let followerNumUpdateQuery = 'UPDATE user u SET u.follower_count = u.follower_count + 1 WHERE user_id = ?';
+
+
+                connection.query(followerNumUpdateQuery, otherUserToken, function(err, result){
+                  if(err){
+                    res.status(500).send( {
+                            status : "fail" ,
+                            message : "internal server err2 : followerNumUpdateQuery err"
+                         });
+                         connection.release() ;
+                         callback( "Query err" ) ;
+                  }else{
+
+                  //  result.push(result2);
+
+                    res.status(200).send({
+                      status : "success",
+                      message : "follow success"
+                    });
+
+                    connection.release();
+                    callback(null, connection, result);
+                  }
+                });
+              }
+            ], function(err, end){
+              if(err)
+              console.log(err);
+              else
+              console.log(end);
+            }
+          )
+
+          }else{
+
+            //팔로우테이블에 있으면 팔로우 취소
+            async.waterfall([
+
+              function(callback){
+
+                pool.getConnection(function(err, connection){
+                  if(err) {
+                    res.status(500).send( {
+          						status : "fail" ,
+          						message : "internal server err1"
+          					});
+          					callback("getConnection err");
+                  } else{
+                    callback(null, connection);
+                  }
+                });
+              },
+
+              //user_follower 테이블에서 삭제
+              function(connection, callback){
+
+                let followerDeleteQuery = 'DELETE FROM user_follower WHERE user_id = ? AND follower_id = ?';
+
+                connection.query(followerDeleteQuery, [otherUserToken, userToken], function(err, result){
+                  if(err){
+                    res.status(500).send( {
+                            status : "fail" ,
+                            message : "internal server err2 : followerDeleteQuery err"
+                         });
+                         connection.release() ;
+                         callback( "Query err" ) ;
+                  }else{
+
+                    callback(null, connection, result);
+                  }
+                });
+              },
+
+              //user_following 테이블에서 삭제
+              function(connection, result, callback){
+
+                let followingInsertQuery = 'DELETE FROM user_following WHERE user_id = ? AND following_id = ?';
+                //let array = [ null, userToken, otherUserToken ];
+
+
+                connection.query(followingInsertQuery, [userToken, otherUserToken], function(err, result2){
+                  if(err){
+                    res.status(500).send( {
+                            status : "fail" ,
+                            message : "internal server err2 : followingDeleteQuery err"
+                         });
+                         connection.release() ;
+                         callback( "Query err" ) ;
+                  }else{
+
+                    //result[0].push(result2[0]);
+                    callback(null, connection, result);
+                  }
+                });
+              },
+
+
+              //user 테이블에 팔로잉 수 -1
+              function(connection, result, callback){
+
+                let addFollowingNumQuery = 'UPDATE user u SET u.following_count = u.following_count - 1 WHERE user_id = ?';
+
+
+                connection.query(addFollowingNumQuery, userToken, function(err, result){
+                  if(err){
+                    res.status(500).send( {
+                            status : "fail" ,
+                            message : "internal server err2 : addFollowingNumQuery err"
+                         });
+                         connection.release() ;
+                         callback( "Query err" ) ;
+                  }else{
+
+                    callback(null, connection, result);
+                  }
+                });
+              },
+
+              //user 테이블에 팔로워 수 -1
+              function(connection, result, callback){
+
+                let subFollowerNumQuery = 'UPDATE user u SET u.follower_count = u.follower_count - 1 WHERE user_id = ?';
+
+
+                connection.query(subFollowerNumQuery, otherUserToken, function(err, result){
+                  if(err){
+                    res.status(500).send( {
+                            status : "fail" ,
+                            message : "internal server err2 : subFollowerNumQuery err"
+                         });
+                         connection.release() ;
+                         callback( "Query err" ) ;
+                  }else{
+
+                  //  result.push(result2);
+
+                    res.status(200).send({
+                      status : "success",
+                      message : "unFollow success"
+                    });
+
+                    connection.release();
+                    callback(null, connection, result);
+                  }
+                });
+              }
+
+            ], function(err, end){
+              if(err)
+                console.log(err);
+              else
+                console.log(end);
+            }
+          )
+
+          }
+        }
+      });
+    }
+  ];
+
+  async.waterfall(task, function(err, end) {
+      if(err)
+        console.log(err);
+      else
+        console.log(end);
+    });//async.waterfall
+
+
+});
+
+
+
 
 
 // 프로필 수정
@@ -934,7 +1259,7 @@ router.put('/edit/:userToken', function(req, res){
     function(connection, callback){
 
       let mypageEditQuery = 'UPDATE user u SET u.user_image = ?, u.user_name=?, u.user_intro=? '+
-      'WHERE u.user_id = ?';
+      'WHERE u.user_id = ? LIMIT 1';
 
       let editUserRecord = [
         req.body.user_image,
@@ -963,7 +1288,7 @@ router.put('/edit/:userToken', function(req, res){
           //console.log(result);
         }
       });
-    },
+    }
 
 
   ];
