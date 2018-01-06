@@ -1,7 +1,7 @@
 
 const express = require('express');
 const router = express.Router();
-const pool = require('../config/dbpool');
+const pool = require('../config/dbPool');
 const async = require('async');
 // const jwt = require('jsonwebtoken');
 
