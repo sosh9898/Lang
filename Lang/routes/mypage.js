@@ -897,7 +897,6 @@ router.get('/lounge/:userToken/:otherUserToken', function(req, res) {
 
 
 // 26. 남의 페이지 - 팔로우 신청하기
-// 수정중
 router.put('/:userToken/:otherUserToken/follow', function(req, res){
 
   let userToken = req.params.userToken;
@@ -1197,18 +1196,6 @@ router.put('/:userToken/:otherUserToken/follow', function(req, res){
         console.log(end);
     });//async.waterfall
 
-  // async.waterfall(followTask, function(err, end) {
-  //     if(err)
-  //       console.log(err);
-  //     else
-  //       console.log(end);
-  //   });//async.waterfall
-  // async.waterfall(unFollowTask, function(err, end) {
-  //     if(err)
-  //       console.log(err);
-  //     else
-  //       console.log(end);
-  //   });//async.waterfall
 
 });
 
