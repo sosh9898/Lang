@@ -2,22 +2,11 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../config/dbPool');
-const secret = require('../config/jwt_secret');
 const async = require('async');
-// const jwt = require('jsonwebtoken');
+const jwt = require('jsonwebtoken');
 
-// jwt.verify(jwtToken, secret, (err, data) => {
-//     	if (err){
-//   		if(err.message === 'jwt expired') {
-//       		console.log(err);
-//       		console.log('expired token');
-//     	}
-//   		else if(err.message === 'invalid token') console.log('invalid token');
-//  		 }
-//   		else {
-// 		    userToken = data.key1;
-// 	}
-// 	console.log(userToken);
+
+	//console.log(userToken);
 
 //multer????
 /*
@@ -38,22 +27,24 @@ var upload = multer({
 });
 */
 
-//테스트용
-router.get('/', function(req, res, next) {
-  res.send('respond with a resource mypage');
-});
-
 
 // 20. 내가 보는 마이 페이지
-// 패키징 고치기
 
-router.get('/:userToken', function(req, res){
-//router.get('/', function(req, res) {
-//  let userToken = req.headers.jwttoken;
+router.get('/', function(req, res){
 
+  let jwtToken = req.headers.token;
 
-
-  let userToken = req.params.userToken;
+  jwt.verify(jwtToken, req.app.get('secret'), (err, data) => {
+      if (err){
+      if(err.message === 'jwt expired') {
+          console.log(err);
+          console.log('expired token');
+      }
+      else if(err.message === 'invalid token') console.log('invalid token');
+     }
+      else
+        userId = data.key1;
+  });
 
 
   let task = [
@@ -81,7 +72,7 @@ router.get('/:userToken', function(req, res){
       let mypageQuery = 'SELECT * FROM user WHERE user.user_id = ?';
 
 
-      connection.query(mypageQuery, userToken, function(err, result){
+      connection.query(mypageQuery, userId, function(err, result){
         if(err){
           res.status(500).send( {
 						status : "fail" ,
@@ -98,67 +89,6 @@ router.get('/:userToken', function(req, res){
       });
     },
 
-    //팔로워수
-    function (connection, result, callback){
-      let followerNumQuery = 'SELECT COUNT(u_fr.user_follower_id) followerNum '+
-      'FROM user_follower u_fr , user_following u_fg '+
-      'WHERE u_fr.follower_id = u_fg.user_id '+
-      'AND u_fr.user_id = u_fg.following_id '+
-      'AND u_fr.user_id = ?';
-
-
-      connection.query(followerNumQuery, userToken, function(err, result2){
-        if(err){
-          res.status(500).send( {
-            status : "fail" ,
-            message : "internal server err2 : myFollowerNum query err"
-          });
-          connection.release() ;
-          callback( "Query err" ) ;
-        }else{
-          // if(!result2.length == 0){
-             result.followerNum = result2[0].followerNum;
-             // mypageResult.myFollowerNum.push(result2[0]);
-             console.log(result);
-
-          callback( null , connection, result ) ;
-
-        }
-      });
-    },
-
-
-
-    //팔로잉수
-    function (connection, result, callback){
-      let followingNumQuery = 'SELECT COUNT(u_fg.user_following_id) followingNum '+
-      'FROM user_follower u_fr , user_following u_fg '+
-      'WHERE u_fr.follower_id = u_fg.user_id '+
-      'AND u_fr.user_id = u_fg.following_id '+
-      'AND u_fg.user_id = ?';
-
-
-      connection.query(followingNumQuery, userToken, function(err, result2){
-        if(err){
-          res.status(500).send( {
-            status : "fail" ,
-            message : "internal server err2 : myFollowingNum query err"
-          });
-          connection.release() ;
-          callback( "Query err" ) ;
-        }else{
-
-          result.followingNum = result2[0].followingNum;
-          // mypageResult.myFollowingNum.push(result2[0]);
-         callback( null , connection, result ) ;
-        //  console.log(result);
-        }
-      });
-    },
-
-
-
-
 
     //내 모임수
     function (connection,result, callback){
@@ -167,7 +97,7 @@ router.get('/:userToken', function(req, res){
       'ON u.user_id = m.user_id WHERE u.user_id = ?';
 
 
-      connection.query(meetingNumQuery, userToken, function(err, result2){
+      connection.query(meetingNumQuery, userId, function(err, result2){
         if(err){
           res.status(500).send( {
             status : "fail" ,
@@ -192,7 +122,7 @@ router.get('/:userToken', function(req, res){
       'ON u.user_id = l.user_id WHERE u.user_id = ?';
 
 
-      connection.query(loungeNumQuery, userToken, function(err, result2){
+      connection.query(loungeNumQuery, userId, function(err, result2){
         if(err){
           res.status(500).send( {
             status : "fail" ,
@@ -227,14 +157,24 @@ router.get('/:userToken', function(req, res){
 });
 
 
-//마이페이지 - 팔로워 버튼
-// 24. 팔로워 리스트
 
+// 24. 나의 팔로워 리스트
 
-router.get('/follower/:userToken', function(req, res) {
+router.get('/myfollowerList', function(req, res) {
 
-  //let userToken = req.headers.jwttoken;
-  let userToken = req.params.userToken;
+  let jwtToken = req.headers.token;
+  //let userToken = req.params.userToken;
+  jwt.verify(jwtToken, req.app.get('secret'), (err, data) => {
+      if (err){
+      if(err.message === 'jwt expired') {
+          console.log(err);
+          console.log('expired token');
+      }
+      else if(err.message === 'invalid token') console.log('invalid token');
+     }
+      else
+        userId = data.key1;
+  });
 
   //팔로워 목록 불러오기
   let task = [
@@ -259,7 +199,7 @@ router.get('/follower/:userToken', function(req, res) {
       'FROM user u JOIN user_follower u_f ON u.user_id = u_f.follower_id '+
       'WHERE u_f.user_id = ?';
 
-      connection.query(myfollowerListQuery, userToken, function(err, result){
+      connection.query(myfollowerListQuery, userId, function(err, result){
         if(err){
           res.status(500).send( {
 						status : "fail" ,
@@ -291,12 +231,24 @@ router.get('/follower/:userToken', function(req, res) {
 });
 
 
-// 25. 팔로잉 리스트
+// 25. 나의 팔로잉 리스트
 
-router.get('/following/:userToken', function(req, res) {
+router.get('/myfollowingList/', function(req, res) {
 
-  //let userToken = req.headers.jwttoken;
-  let userToken = req.params.userToken;
+  //let userToken = req.params.userToken;
+  let jwtToken = req.headers.token;
+
+  jwt.verify(jwtToken, req.app.get('secret'), (err, data) => {
+      if (err){
+      if(err.message === 'jwt expired') {
+          console.log(err);
+          console.log('expired token');
+      }
+      else if(err.message === 'invalid token') console.log('invalid token');
+     }
+      else
+        userId = data.key1;
+  });
 
   //팔로잉 목록 불러오기
   let task = [
@@ -321,7 +273,7 @@ router.get('/following/:userToken', function(req, res) {
       'FROM user u JOIN user_following u_f ON u.user_id = u_f.following_id '+
       'WHERE u_f.user_id = ?';
 
-      connection.query(myfollowingListQuery, userToken, function(err, result){
+      connection.query(myfollowingListQuery, userId, function(err, result){
         if(err){
           res.status(500).send( {
 						status : "fail" ,
@@ -356,10 +308,23 @@ router.get('/following/:userToken', function(req, res) {
 
 // 22. 내 모임 리스트
 //내 모임 정보 받아오기 + 승인 여부
-//승인 여부에 따라 approval_state 줄 지 결정해서 수정
-router.get('/meeting/:userToken', function(req, res) {
 
-  let userToken = req.params.userToken;
+router.get('/myMeetingList', function(req, res) {
+
+  //let userToken = req.params.userToken;
+  let jwtToken = req.headers.token;
+
+  jwt.verify(jwtToken, req.app.get('secret'), (err, data) => {
+      if (err){
+      if(err.message === 'jwt expired') {
+          console.log(err);
+          console.log('expired token');
+      }
+      else if(err.message === 'invalid token') console.log('invalid token');
+     }
+      else
+        userId = data.key1;
+  });
 
   let task = [
     function(callback) {
@@ -378,7 +343,7 @@ router.get('/meeting/:userToken', function(req, res) {
     },
 
 //내 모임 정보 받아오기
-//승인여부
+
     function (connection, callback){
 
       let myMeetingQuery = 'SELECT m.*,m_u.approval_state '+
@@ -386,7 +351,7 @@ router.get('/meeting/:userToken', function(req, res) {
       'WHERE m_u.user_id = ? AND m.meeting_id IN '+
       '(SELECT m_u.meeting_id FROM meeting_users m_u JOIN user u ON m_u.user_id = u.user_id)';
 
-      connection.query(myMeetingQuery, userToken, function(err, result){
+      connection.query(myMeetingQuery, userId, function(err, result){
         if(err){
           res.status(500).send( {
 						status : "fail" ,
@@ -418,9 +383,22 @@ router.get('/meeting/:userToken', function(req, res) {
 });
 
 // 23. 내 라운지 리스트
-router.get('/lounge/:userToken', function(req, res) {
+router.get('/myLoungeList', function(req, res) {
 
-  let userToken = req.params.userToken;
+  //let userToken = req.params.userToken;
+  let jwtToken = req.headers.token;
+
+  jwt.verify(jwtToken, req.app.get('secret'), (err, data) => {
+      if (err){
+      if(err.message === 'jwt expired') {
+          console.log(err);
+          console.log('expired token');
+      }
+      else if(err.message === 'invalid token') console.log('invalid token');
+     }
+      else
+        userId = data.key1;
+  });
 
   let task = [
     function(callback) {
@@ -445,7 +423,7 @@ router.get('/lounge/:userToken', function(req, res) {
       'WHERE u.user_id = ? ORDER BY l.lounge_id';
 
 
-      connection.query(myLoungeQuery, userToken, function(err, result){
+      connection.query(myLoungeQuery, userId, function(err, result){
         if(err){
           res.status(500).send( {
 						status : "fail" ,
@@ -481,13 +459,22 @@ router.get('/lounge/:userToken', function(req, res) {
 
 // 21. 다른 사람 페이지
 
-router.get('/:userToken/:otherUserToken', function(req, res){
-//router.get('/', function(req, res) {
-//  let userToken = req.headers.jwttoken;
+router.post('/otherPage', function(req, res){
 
-  let userToken = req.params.userToken;
-  let otherUserToken = req.params.otherUserToken;
+  let otherUserId = req.body.otherUserId;
+  let jwtToken = req.headers.token;
 
+  jwt.verify(jwtToken, req.app.get('secret'), (err, data) => {
+      if (err){
+      if(err.message === 'jwt expired') {
+          console.log(err);
+          console.log('expired token');
+      }
+      else if(err.message === 'invalid token') console.log('invalid token');
+     }
+      else
+        userId = data.key1;
+  });
 
   let task = [
 
@@ -514,7 +501,7 @@ router.get('/:userToken/:otherUserToken', function(req, res){
       let mypageQuery = 'SELECT * FROM user WHERE user.user_id = ?';
 
 
-      connection.query(mypageQuery, otherUserToken, function(err, result){
+      connection.query(mypageQuery, otherUserId, function(err, result){
         if(err){
           res.status(500).send( {
 						status : "fail" ,
@@ -531,62 +518,6 @@ router.get('/:userToken/:otherUserToken', function(req, res){
       });
     },
 
-    //팔로워수
-    function (connection, result, callback){
-      let followerNumQuery = 'SELECT COUNT(u_fr.user_follower_id) followerNum '+
-      'FROM user_follower u_fr , user_following u_fg '+
-      'WHERE u_fr.follower_id = u_fg.user_id '+
-      'AND u_fr.user_id = u_fg.following_id '+
-      'AND u_fr.user_id = ?';
-
-
-      connection.query(followerNumQuery, otherUserToken, function(err, result2){
-        if(err){
-          res.status(500).send( {
-            status : "fail" ,
-            message : "internal server err2 : otherFollowerNum query err"
-          });
-          connection.release() ;
-          callback( "Query err" ) ;
-        }else{
-
-          // if(!result2.length == 0){
-             result.followerNum = result2[0].followerNum;
-             // mypageResult.myFollowerNum.push(result2[0]);
-
-
-          callback( null , connection, result ) ;
-          console.log(result);
-        }
-      });
-    },
-
-    //팔로잉수
-    function (connection, result, callback){
-      let followingNumQuery = 'SELECT COUNT(u_fg.user_following_id) followingNum '+
-      'FROM user_follower u_fr , user_following u_fg '+
-      'WHERE u_fr.follower_id = u_fg.user_id '+
-      'AND u_fr.user_id = u_fg.following_id '+
-      'AND u_fg.user_id = ?';
-
-
-      connection.query(followingNumQuery, otherUserToken, function(err, result2){
-        if(err){
-          res.status(500).send( {
-            status : "fail" ,
-            message : "internal server err2 : otherFollowingNum query err"
-          });
-          connection.release() ;
-          callback( "Query err" ) ;
-        }else{
-
-          result.followingNum = result2[0].followingNum;
-          // mypageResult.myFollowingNum.push(result2[0]);
-         callback( null , connection, result ) ;
-        //  console.log(result3);
-        }
-      });
-    },
 
     //그 사람의 모임수
     function (connection,result, callback){
@@ -595,7 +526,7 @@ router.get('/:userToken/:otherUserToken', function(req, res){
       'ON u.user_id = m.user_id WHERE u.user_id = ?';
 
 
-      connection.query(meetingNumQuery, otherUserToken, function(err, result2){
+      connection.query(meetingNumQuery, otherUserId, function(err, result2){
         if(err){
           res.status(500).send( {
             status : "fail" ,
@@ -620,7 +551,7 @@ router.get('/:userToken/:otherUserToken', function(req, res){
       'ON u.user_id = l.user_id WHERE u.user_id = ?';
 
 
-      connection.query(loungeNumQuery, otherUserToken, function(err, result2){
+      connection.query(loungeNumQuery, otherUserId, function(err, result2){
         if(err){
           res.status(500).send( {
             status : "fail" ,
@@ -655,16 +586,27 @@ router.get('/:userToken/:otherUserToken', function(req, res){
 });
 
 
-//다른 사람 페이지 - 팔로워 버튼
-// 24-2. 다른 사람 팔로워 리스트
-//필요없는거 같아....
 
+// 24-2. 남의 팔로워 리스트
 
-router.get('/follower/:userToken/:otherUserToken', function(req, res) {
+router.post('/otherFollowerList', function(req, res) {
 
   //let userToken = req.headers.jwttoken;
-  let userToken = req.params.userToken;
-  let otherUserToken = req.params.otherUserToken;
+  //let userToken = req.params.userToken;
+  let otherUserId = req.body.otherUserId;
+  let jwtToken = req.headers.token;
+
+  jwt.verify(jwtToken, req.app.get('secret'), (err, data) => {
+      if (err){
+      if(err.message === 'jwt expired') {
+          console.log(err);
+          console.log('expired token');
+      }
+      else if(err.message === 'invalid token') console.log('invalid token');
+     }
+      else
+        userId = data.key1;
+  });
 
 
   //팔로워 목록 불러오기
@@ -690,7 +632,7 @@ router.get('/follower/:userToken/:otherUserToken', function(req, res) {
       'FROM user u JOIN user_follower u_f ON u.user_id = u_f.follower_id '+
       'WHERE u_f.user_id = ?';
 
-      connection.query(otherfollowerListQuery, otherUserToken, function(err, result){
+      connection.query(otherfollowerListQuery, otherUserId, function(err, result){
         if(err){
           res.status(500).send( {
 						status : "fail" ,
@@ -722,14 +664,26 @@ router.get('/follower/:userToken/:otherUserToken', function(req, res) {
 });
 
 
-// 25-2. 팔로잉 리스트
-//필요없..?
+// 25-2. 남의 팔로잉 리스트
 
-router.get('/following/:userToken/:otherUserToken', function(req, res) {
+router.post('/otherFollowingList', function(req, res) {
 
   //let userToken = req.headers.jwttoken;
-  let userToken = req.params.userToken;
-  let otherUserToken = req.params.otherUserToken;
+//  let userToken = req.params.userToken;
+  let otherUserId = req.body.otherUserId;
+  let jwtToken = req.headers.token;
+
+  jwt.verify(jwtToken, req.app.get('secret'), (err, data) => {
+      if (err){
+      if(err.message === 'jwt expired') {
+          console.log(err);
+          console.log('expired token');
+      }
+      else if(err.message === 'invalid token') console.log('invalid token');
+     }
+      else
+        userId = data.key1;
+  });
 
   //팔로잉 목록 불러오기
   let task = [
@@ -754,7 +708,7 @@ router.get('/following/:userToken/:otherUserToken', function(req, res) {
       'FROM user u JOIN user_following u_f ON u.user_id = u_f.following_id '+
       'WHERE u_f.user_id = ?';
 
-      connection.query(otherfollowingListQuery, otherUserToken, function(err, result){
+      connection.query(otherfollowingListQuery, otherUserId, function(err, result){
         if(err){
           res.status(500).send( {
 						status : "fail" ,
@@ -790,10 +744,23 @@ router.get('/following/:userToken/:otherUserToken', function(req, res) {
 // 22-2. 남 모임 리스트
 //남 모임 정보 받아오기 + 승인 여부 X
 
-router.get('/meeting/:userToken/:otherUserToken', function(req, res) {
+router.post('/otherMeetingList', function(req, res) {
 
-  let userToken = req.params.userToken;
-  let otherUserToken = req.params.otherUserToken;
+  //let userToken = req.params.userToken;
+  let otherUserId = req.body.otherUserId;
+  let jwtToken = req.headers.token;
+
+  jwt.verify(jwtToken, req.app.get('secret'), (err, data) => {
+      if (err){
+      if(err.message === 'jwt expired') {
+          console.log(err);
+          console.log('expired token');
+      }
+      else if(err.message === 'invalid token') console.log('invalid token');
+     }
+      else
+        userId = data.key1;
+  });
 
   let task = [
     function(callback) {
@@ -818,7 +785,7 @@ router.get('/meeting/:userToken/:otherUserToken', function(req, res) {
       'FROM meeting m JOIN meeting_users m_u ON m.meeting_id = m_u.meeting_id '+
       'WHERE m_u.user_id = ? AND m.meeting_id IN (SELECT m_u.meeting_id FROM meeting_users m_u JOIN user u ON m_u.user_id = u.user_id)';
 
-      connection.query(otherMeetingQuery, otherUserToken, function(err, result){
+      connection.query(otherMeetingQuery, otherUserId, function(err, result){
         if(err){
           res.status(500).send( {
 						status : "fail" ,
@@ -851,10 +818,23 @@ router.get('/meeting/:userToken/:otherUserToken', function(req, res) {
 
 // 23-2. 남 라운지 리스트
 //공개여부 프로필 옆에 언어가 native -> hope 둘 다 표시로 바뀜
-router.get('/lounge/:userToken/:otherUserToken', function(req, res) {
+router.post('/otherLoungeList', function(req, res) {
 
-  let userToken = req.params.userToken;
-  let otherUserToken = req.params.otherUserToken;
+  //let userToken = req.params.userToken;
+  let otherUserId = req.body.otherUserId;
+  let jwtToken = req.headers.token;
+
+  jwt.verify(jwtToken, req.app.get('secret'), (err, data) => {
+      if (err){
+      if(err.message === 'jwt expired') {
+          console.log(err);
+          console.log('expired token');
+      }
+      else if(err.message === 'invalid token') console.log('invalid token');
+     }
+      else
+        userId = data.key1;
+  });
 
   let task = [
     function(callback) {
@@ -879,7 +859,7 @@ router.get('/lounge/:userToken/:otherUserToken', function(req, res) {
       'WHERE u.user_id = ? ORDER BY l.lounge_id';
 
 
-      connection.query(otherLoungeQuery, otherUserToken, function(err, result){
+      connection.query(otherLoungeQuery, otherUserId, function(err, result){
         if(err){
           res.status(500).send( {
 						status : "fail" ,
@@ -912,10 +892,23 @@ router.get('/lounge/:userToken/:otherUserToken', function(req, res) {
 
 
 // 26. 남의 페이지 - 팔로우 신청하기
-router.put('/:userToken/:otherUserToken/follow', function(req, res){
+router.put('/follow', function(req, res){
 
-  let userToken = req.params.userToken;
-  let otherUserToken = req.params.otherUserToken;
+  //let userToken = req.params.userToken;
+  let otherUserId = req.body.otherUserId;
+  let jwtToken = req.headers.token;
+
+  jwt.verify(jwtToken, req.app.get('secret'), (err, data) => {
+      if (err){
+      if(err.message === 'jwt expired') {
+          console.log(err);
+          console.log('expired token');
+      }
+      else if(err.message === 'invalid token') console.log('invalid token');
+     }
+      else
+        userId = data.key1;
+  });
 
   let task = [
 
@@ -941,7 +934,7 @@ router.put('/:userToken/:otherUserToken/follow', function(req, res){
       let followCheckQuery = 'SELECT * FROM user_following u_f WHERE user_id = ? AND following_id = ?';
       //let array = [null, userToken, otherUserToken];
 
-      connection.query(followCheckQuery, [userToken, otherUserToken], function(err, result) {
+      connection.query(followCheckQuery, [userId, otherUserId], function(err, result) {
         if(err){
           res.status(500).send({
             status : "fail",
@@ -954,7 +947,6 @@ router.put('/:userToken/:otherUserToken/follow', function(req, res){
 
           //팔로우테이블에 없으면
           if(result.length === 0){ //팔로우 신청
-
             async.waterfall([
 
               //followTask
@@ -977,7 +969,7 @@ router.put('/:userToken/:otherUserToken/follow', function(req, res){
               function(connection, callback){
 
                 let followerInsertQuery = 'INSERT INTO user_follower VALUES(?,?,?)';
-                let array = [ null, otherUserToken, userToken ];
+                let array = [ null, otherUserId, userId ];
 
 
                 connection.query(followerInsertQuery, array, function(err, result){
@@ -999,7 +991,7 @@ router.put('/:userToken/:otherUserToken/follow', function(req, res){
               function(connection, result, callback){
 
                 let followingInsertQuery = 'INSERT INTO user_following VALUES(?,?,?)';
-                let array = [ null, userToken, otherUserToken ];
+                let array = [ null, userId, otherUserId ];
 
 
                 connection.query(followingInsertQuery, array, function(err, result2){
@@ -1025,7 +1017,7 @@ router.put('/:userToken/:otherUserToken/follow', function(req, res){
                 let followingNumUpdateQuery = 'UPDATE user u SET u.following_count = u.following_count + 1 WHERE user_id = ?';
 
 
-                connection.query(followingNumUpdateQuery, userToken, function(err, result){
+                connection.query(followingNumUpdateQuery, userId, function(err, result){
                   if(err){
                     res.status(500).send( {
                             status : "fail" ,
@@ -1046,7 +1038,7 @@ router.put('/:userToken/:otherUserToken/follow', function(req, res){
                 let followerNumUpdateQuery = 'UPDATE user u SET u.follower_count = u.follower_count + 1 WHERE user_id = ?';
 
 
-                connection.query(followerNumUpdateQuery, otherUserToken, function(err, result){
+                connection.query(followerNumUpdateQuery, otherUserId, function(err, result){
                   if(err){
                     res.status(500).send( {
                             status : "fail" ,
@@ -1070,9 +1062,9 @@ router.put('/:userToken/:otherUserToken/follow', function(req, res){
               }
             ], function(err, end){
               if(err)
-              console.log(err);
+                console.log(err);
               else
-              console.log(end);
+                console.log(end);
             }
           )
 
@@ -1101,7 +1093,7 @@ router.put('/:userToken/:otherUserToken/follow', function(req, res){
 
                 let followerDeleteQuery = 'DELETE FROM user_follower WHERE user_id = ? AND follower_id = ?';
 
-                connection.query(followerDeleteQuery, [otherUserToken, userToken], function(err, result){
+                connection.query(followerDeleteQuery, [otherUserToken, userId], function(err, result){
                   if(err){
                     res.status(500).send( {
                             status : "fail" ,
@@ -1123,7 +1115,7 @@ router.put('/:userToken/:otherUserToken/follow', function(req, res){
                 //let array = [ null, userToken, otherUserToken ];
 
 
-                connection.query(followingInsertQuery, [userToken, otherUserToken], function(err, result2){
+                connection.query(followingInsertQuery, [userId, otherUserId], function(err, result2){
                   if(err){
                     res.status(500).send( {
                             status : "fail" ,
@@ -1146,7 +1138,7 @@ router.put('/:userToken/:otherUserToken/follow', function(req, res){
                 let addFollowingNumQuery = 'UPDATE user u SET u.following_count = u.following_count - 1 WHERE user_id = ?';
 
 
-                connection.query(addFollowingNumQuery, userToken, function(err, result){
+                connection.query(addFollowingNumQuery, userId, function(err, result){
                   if(err){
                     res.status(500).send( {
                             status : "fail" ,
@@ -1167,7 +1159,7 @@ router.put('/:userToken/:otherUserToken/follow', function(req, res){
                 let subFollowerNumQuery = 'UPDATE user u SET u.follower_count = u.follower_count - 1 WHERE user_id = ?';
 
 
-                connection.query(subFollowerNumQuery, otherUserToken, function(err, result){
+                connection.query(subFollowerNumQuery, otherUserId, function(err, result){
                   if(err){
                     res.status(500).send( {
                             status : "fail" ,
@@ -1221,13 +1213,23 @@ router.put('/:userToken/:otherUserToken/follow', function(req, res){
 // 프로필 수정
 // 사진, 이름, 자기 소개
 
-router.put('/edit/:userToken', function(req, res){
+router.put('/edit', function(req, res){
 //router.get('/', function(req, res) {
 //  let userToken = req.headers.jwttoken;
 
+let jwtToken = req.headers.token;
 
-
-  let userToken = req.params.userToken;
+jwt.verify(jwtToken, req.app.get('secret'), (err, data) => {
+    if (err){
+    if(err.message === 'jwt expired') {
+        console.log(err);
+        console.log('expired token');
+    }
+    else if(err.message === 'invalid token') console.log('invalid token');
+   }
+    else
+      userId = data.key1;
+});
 
 
 
@@ -1261,8 +1263,9 @@ router.put('/edit/:userToken', function(req, res){
         req.body.user_image,
         req.body.user_name,
         req.body.user_intro,
-        req.body.user_id
+        userId
       ];
+
 
 
       connection.query(mypageEditQuery, editUserRecord, function(err, result){
@@ -1285,8 +1288,6 @@ router.put('/edit/:userToken', function(req, res){
         }
       });
     }
-
-
   ];
 
   async.waterfall(task, function(err, end) {
