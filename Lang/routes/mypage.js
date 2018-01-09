@@ -4,6 +4,7 @@ const router = express.Router();
 const pool = require('../config/dbPool');
 const async = require('async');
 const jwt = require('jsonwebtoken');
+const moment = require('moment');
 
 
 	//console.log(userToken);
@@ -33,6 +34,7 @@ var upload = multer({
 router.get('/', function(req, res){
 
   let jwtToken = req.headers.token;
+  var userId ;
 
   jwt.verify(jwtToken, req.app.get('secret'), (err, data) => {
       if (err){
@@ -163,6 +165,7 @@ router.get('/', function(req, res){
 router.get('/myfollowerList', function(req, res) {
 
   let jwtToken = req.headers.token;
+  var userId;
   //let userToken = req.params.userToken;
   jwt.verify(jwtToken, req.app.get('secret'), (err, data) => {
       if (err){
@@ -237,6 +240,7 @@ router.get('/myfollowingList/', function(req, res) {
 
   //let userToken = req.params.userToken;
   let jwtToken = req.headers.token;
+  var userId;
 
   jwt.verify(jwtToken, req.app.get('secret'), (err, data) => {
       if (err){
@@ -313,6 +317,7 @@ router.get('/myMeetingList', function(req, res) {
 
   //let userToken = req.params.userToken;
   let jwtToken = req.headers.token;
+  var userId;
 
   jwt.verify(jwtToken, req.app.get('secret'), (err, data) => {
       if (err){
@@ -387,6 +392,7 @@ router.get('/myLoungeList', function(req, res) {
 
   //let userToken = req.params.userToken;
   let jwtToken = req.headers.token;
+  var userId;
 
   jwt.verify(jwtToken, req.app.get('secret'), (err, data) => {
       if (err){
@@ -463,6 +469,7 @@ router.post('/otherPage', function(req, res){
 
   let otherUserId = req.body.otherUserId;
   let jwtToken = req.headers.token;
+  var userId;
 
   jwt.verify(jwtToken, req.app.get('secret'), (err, data) => {
       if (err){
@@ -595,6 +602,7 @@ router.post('/otherFollowerList', function(req, res) {
   //let userToken = req.params.userToken;
   let otherUserId = req.body.otherUserId;
   let jwtToken = req.headers.token;
+  var userId;
 
   jwt.verify(jwtToken, req.app.get('secret'), (err, data) => {
       if (err){
@@ -672,6 +680,7 @@ router.post('/otherFollowingList', function(req, res) {
 //  let userToken = req.params.userToken;
   let otherUserId = req.body.otherUserId;
   let jwtToken = req.headers.token;
+  var userId;
 
   jwt.verify(jwtToken, req.app.get('secret'), (err, data) => {
       if (err){
@@ -749,6 +758,7 @@ router.post('/otherMeetingList', function(req, res) {
   //let userToken = req.params.userToken;
   let otherUserId = req.body.otherUserId;
   let jwtToken = req.headers.token;
+  var userId;
 
   jwt.verify(jwtToken, req.app.get('secret'), (err, data) => {
       if (err){
@@ -823,6 +833,7 @@ router.post('/otherLoungeList', function(req, res) {
   //let userToken = req.params.userToken;
   let otherUserId = req.body.otherUserId;
   let jwtToken = req.headers.token;
+  var userId;
 
   jwt.verify(jwtToken, req.app.get('secret'), (err, data) => {
       if (err){
@@ -875,6 +886,8 @@ router.post('/otherLoungeList', function(req, res) {
             msg : "total otherLounge list success"
           });
 
+          console.log(userId);
+
           connection.release();
           callback(null, connection, result);
         }
@@ -894,9 +907,12 @@ router.post('/otherLoungeList', function(req, res) {
 // 26. 남의 페이지 - 팔로우 신청하기
 router.put('/follow', function(req, res){
 
+
   //let userToken = req.params.userToken;
   let otherUserId = req.body.otherUserId;
   let jwtToken = req.headers.token;
+  var userId;
+  var userName;
 
   jwt.verify(jwtToken, req.app.get('secret'), (err, data) => {
       if (err){
@@ -967,6 +983,7 @@ router.put('/follow', function(req, res){
 
               //user_follower 테이블에 입력
               function(connection, callback){
+
 
                 let followerInsertQuery = 'INSERT INTO user_follower VALUES(?,?,?)';
                 let array = [ null, otherUserId, userId ];
@@ -1050,9 +1067,67 @@ router.put('/follow', function(req, res){
 
                   //  result.push(result2);
 
+                    // res.status(200).send({
+                    //   status : "success",
+                    //   message : "follow success"
+                    // });
+
+
+                    callback(null, connection, result);
+                  }
+                });
+              },
+              //my_notification 테이블에 입력
+              function(connection, userNameRow, callback){
+
+                let selectUserNamequery = 'SELECT u.user_name FROM user u WHERE u.user_id = ?';
+
+
+                connection.query(selectUserNamequery, otherUserId, function(err, result){
+                  if(err){
+                    res.status(500).send( {
+                            status : "fail" ,
+                            message : "internal server err2 : selectUserNamequery err"
+                         });
+                         connection.release() ;
+                         callback( "Query err" ) ;
+                  }else{
+
+                  //  result.push(result2);
+
+                    // res.status(200).send({
+                    //   status : "success",
+                    //   message : "selectUserName success"
+                    // });
+
+
+                    callback(null, connection, result[0].user_name);
+                  }
+                });
+              },
+
+              function(connection, userName, callback){
+                console.log(userId);
+
+                let query = 'INSERT INTO my_notification values (?,?,?,?,?,?,?)';
+                let content = userName+"님이 회원님을 팔로우합니다."
+                let paramsList = [null,-1, otherUserId, userId, content, moment(Date.now()).format('YYYY-MM-DD HH:mm:ss') , 500];
+
+                connection.query(query,paramsList, function(err, result){
+                  if(err){
+                    res.status(500).send( {
+                            status : "fail" ,
+                            message : "internal server err2 : notiquery err"
+                         });
+                         connection.release() ;
+                         callback( err ) ;
+                  }else{
+
+                  //  result.push(result2);
+
                     res.status(200).send({
                       status : "success",
-                      message : "follow success"
+                      message : "all follow success"
                     });
 
                     connection.release();
@@ -1093,7 +1168,7 @@ router.put('/follow', function(req, res){
 
                 let followerDeleteQuery = 'DELETE FROM user_follower WHERE user_id = ? AND follower_id = ?';
 
-                connection.query(followerDeleteQuery, [otherUserToken, userId], function(err, result){
+                connection.query(followerDeleteQuery, [otherUserId, userId], function(err, result){
                   if(err){
                     res.status(500).send( {
                             status : "fail" ,
